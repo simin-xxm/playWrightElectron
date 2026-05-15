@@ -6,10 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc && vite build",
-    "prepare:chromium": "node prepare-chromium.mjs",
-    "build:mac": "pnpm build && pnpm prepare:chromium && electron-builder --mac",
-    "build:win": "pnpm build && pnpm prepare:chromium && electron-builder --win",
-    "build:all": "pnpm build && pnpm prepare:chromium && electron-builder --mac --win",
+    "build:mac": "pnpm build && electron-builder --mac",
+    "build:win": "pnpm build && electron-builder --win",
+    "build:all": "pnpm build && electron-builder --mac --win",
     "preview": "vite preview"
   },
   "dependencies": {

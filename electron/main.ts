@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain, Menu } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import fs from 'node:fs'
@@ -27,13 +27,23 @@ let win: BrowserWindow | null
 
 function createWindow() {
   win = new BrowserWindow({
+    width: 1600, 
+    height: 1000,
+    minWidth: 800, 
+    minHeight: 600, 
     icon: path.join(process.env.VITE_PUBLIC, 'electron-vite.svg'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
     },
   })
 
-  // Test active push message to Renderer-process.
+  // 在 Windows 上隐藏菜单栏
+  if (process.platform === 'win32') {
+    win.setMenuBarVisibility(false)
+    win.setAutoHideMenuBar(true)
+  }
+
+  // 测试向渲染进程推送消息
   win.webContents.on('did-finish-load', () => {
     win?.webContents.send('main-process-message', (new Date).toLocaleString())
   })
@@ -46,9 +56,7 @@ function createWindow() {
   }
 }
 
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
+// 退出时关闭所有窗口，macOS除外
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
@@ -57,14 +65,19 @@ app.on('window-all-closed', () => {
 })
 
 app.on('activate', () => {
-  // On OS X it's common to re-create a window in the app when the
-  // dock icon is clicked and there are no other windows open.
+  // 在 macOS 上，当点击 dock 图标且没有其他窗口打开时，重新创建窗口
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow()
   }
 })
 
-app.whenReady().then(createWindow)
+app.whenReady().then(() => {
+  // 在 Windows 上完全移除菜单
+  if (process.platform === 'win32') {
+    Menu.setApplicationMenu(null)
+  }
+  createWindow()
+})
 
 // --- Playwright 脚本管理 ---
 function getScriptsDir() {
@@ -78,7 +91,7 @@ function getScriptsDir() {
 ipcMain.handle('get-scripts', async () => {
   const scriptsDir = getScriptsDir()
   if (!fs.existsSync(scriptsDir)) return []
-  const files = fs.readdirSync(scriptsDir).filter(f => f.endsWith('.js') && f !== 'script-runner.js')
+  const files = fs.readdirSync(scriptsDir).filter(f => (f.endsWith('.js') || f.endsWith('.cjs')) && !f.startsWith('script-runner'))
   const scripts = []
   for (const file of files) {
     const content = fs.readFileSync(path.join(scriptsDir, file), 'utf-8')
@@ -106,7 +119,7 @@ ipcMain.handle('run-script', async (_, scriptFile: string) => {
   }
 
   const { fork } = await import('node:child_process')
-  const runnerPath = path.join(scriptsDir, 'script-runner.js')
+  const runnerPath = path.join(scriptsDir, 'script-runner.cjs')
 
   // 生产模式下传递打包的 Chromium 路径
   let chromiumPath: string | undefined
@@ -115,11 +128,7 @@ ipcMain.handle('run-script', async (_, scriptFile: string) => {
     if (process.platform === 'win32') {
       chromiumPath = path.join(chromiumDir, 'chrome.exe')
     } else if (process.platform === 'darwin') {
-      chromiumPath = path.join(chromiumDir, 'Chromium.app', 'Contents', 'MacOS', 'Chromium')
-      // fallback: 某些版本目录结构不同
-      if (!fs.existsSync(chromiumPath)) {
-        chromiumPath = path.join(chromiumDir, 'chrome')
-      }
+      chromiumPath = path.join(chromiumDir, 'Google Chrome for Testing.app', 'Contents', 'MacOS', 'Google Chrome for Testing')
     } else {
       chromiumPath = path.join(chromiumDir, 'chrome')
     }

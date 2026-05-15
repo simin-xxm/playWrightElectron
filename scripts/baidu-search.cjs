@@ -32,6 +32,8 @@ module.exports = {
     await page.locator('[data-menu-id="/equip/printerManagement"]').click();
     await page.click('button:has-text("标本箱温度打印")');
 
+    
+
     onLog('脚本执行完毕，等待手动关闭浏览器...')
     await page.waitForEvent('close', { timeout: 0 }).catch(() => {})
     await browser.close().catch(() => {})

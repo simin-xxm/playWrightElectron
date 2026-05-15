@@ -1,81 +1,93 @@
-import { app as f, BrowserWindow as E, ipcMain as P } from "electron";
-import { fileURLToPath as g } from "node:url";
+import { app as f, BrowserWindow as j, Menu as S, ipcMain as E } from "electron";
+import { fileURLToPath as v } from "node:url";
 import s from "node:path";
-import l from "node:fs";
-const R = s.dirname(g(import.meta.url));
-process.env.APP_ROOT = s.join(R, "..");
-const c = process.env.VITE_DEV_SERVER_URL, I = s.join(process.env.APP_ROOT, "dist-electron"), j = s.join(process.env.APP_ROOT, "dist");
-process.env.VITE_PUBLIC = c ? s.join(process.env.APP_ROOT, "public") : j;
+import m from "node:fs";
+const w = s.dirname(v(import.meta.url));
+process.env.APP_ROOT = s.join(w, "..");
+const c = process.env.VITE_DEV_SERVER_URL, M = s.join(process.env.APP_ROOT, "dist-electron"), R = s.join(process.env.APP_ROOT, "dist");
+process.env.VITE_PUBLIC = c ? s.join(process.env.APP_ROOT, "public") : R;
 let e;
-function w() {
-  e = new E({
+function g() {
+  e = new j({
+    width: 1600,
+    height: 1e3,
+    minWidth: 800,
+    minHeight: 600,
     icon: s.join(process.env.VITE_PUBLIC, "electron-vite.svg"),
     webPreferences: {
-      preload: s.join(R, "preload.mjs")
+      preload: s.join(w, "preload.mjs")
     }
-  }), e.webContents.on("did-finish-load", () => {
+  }), process.platform === "win32" && (e.setMenuBarVisibility(!1), e.setAutoHideMenuBar(!0)), e.webContents.on("did-finish-load", () => {
     e == null || e.webContents.send("main-process-message", (/* @__PURE__ */ new Date()).toLocaleString());
-  }), c ? e.loadURL(c) : e.loadFile(s.join(j, "index.html"));
+  }), c ? e.loadURL(c) : e.loadFile(s.join(R, "index.html"));
 }
 f.on("window-all-closed", () => {
   process.platform !== "darwin" && (f.quit(), e = null);
 });
 f.on("activate", () => {
-  E.getAllWindows().length === 0 && w();
+  j.getAllWindows().length === 0 && g();
 });
-f.whenReady().then(w);
-function O() {
+f.whenReady().then(() => {
+  process.platform === "win32" && S.setApplicationMenu(null), g();
+});
+function T() {
   return c ? s.join(process.env.APP_ROOT, "scripts") : s.join(process.resourcesPath, "scripts");
 }
-P.handle("get-scripts", async () => {
-  const p = O();
-  if (!l.existsSync(p)) return [];
-  const m = l.readdirSync(p).filter((t) => t.endsWith(".js") && t !== "script-runner.js"), o = [];
-  for (const t of m) {
-    const a = l.readFileSync(s.join(p, t), "utf-8"), d = a.match(/name:\s*['"](.+?)['"]/), r = a.match(/description:\s*['"](.+?)['"]/);
-    o.push({
+E.handle("get-scripts", async () => {
+  const a = T();
+  if (!m.existsSync(a)) return [];
+  const h = m.readdirSync(a).filter((t) => (t.endsWith(".js") || t.endsWith(".cjs")) && !t.startsWith("script-runner")), r = [];
+  for (const t of h) {
+    const l = m.readFileSync(s.join(a, t), "utf-8"), d = l.match(/name:\s*['"](.+?)['"]/), n = l.match(/description:\s*['"](.+?)['"]/);
+    r.push({
       file: t,
       name: d ? d[1] : t,
-      description: r ? r[1] : ""
+      description: n ? n[1] : ""
     });
   }
-  return o;
+  return r;
 });
-P.handle("run-script", async (p, m) => {
-  const o = O(), t = s.join(o, m);
-  if (!t.startsWith(o))
+E.handle("run-script", async (a, h) => {
+  const r = T(), t = s.join(r, h);
+  if (!t.startsWith(r))
     throw new Error("Invalid script path");
-  if (!l.existsSync(t))
+  if (!m.existsSync(t))
     throw new Error("Script not found");
-  const { fork: a } = await import("node:child_process"), d = s.join(o, "script-runner.js");
-  return new Promise((r) => {
-    var h, _;
-    const i = a(d, [t], {
+  const { fork: l } = await import("node:child_process"), d = s.join(r, "script-runner.cjs");
+  let n;
+  if (!c) {
+    const i = s.join(process.resourcesPath, "chromium");
+    process.platform === "win32" ? n = s.join(i, "chrome.exe") : process.platform === "darwin" ? n = s.join(i, "Google Chrome for Testing.app", "Contents", "MacOS", "Google Chrome for Testing") : n = s.join(i, "chrome");
+  }
+  return new Promise((i) => {
+    var _, P;
+    const p = l(d, [t], {
       stdio: ["pipe", "pipe", "pipe", "ipc"],
-      cwd: o,
+      cwd: r,
       env: {
         ...process.env,
         ELECTRON_RUN_AS_NODE: "1",
-        NODE_PATH: c ? s.join(process.env.APP_ROOT, "node_modules") : s.join(process.resourcesPath, "app", "node_modules")
+        NODE_PATH: c ? s.join(process.env.APP_ROOT, "node_modules") : s.join(process.resourcesPath, "app", "node_modules"),
+        ...n ? { CHROMIUM_PATH: n } : {}
       }
     });
-    (h = i.stdout) == null || h.on("data", (n) => {
-      n.toString().trim().split(`
+    (_ = p.stdout) == null || _.on("data", (o) => {
+      o.toString().trim().split(`
 `).forEach((u) => e == null ? void 0 : e.webContents.send("script-log", u));
-    }), (_ = i.stderr) == null || _.on("data", (n) => {
-      n.toString().trim().split(`
+    }), (P = p.stderr) == null || P.on("data", (o) => {
+      o.toString().trim().split(`
 `).forEach((u) => e == null ? void 0 : e.webContents.send("script-log", `⚠️ ${u}`));
-    }), i.on("message", (n) => {
-      n.type === "log" && (e == null || e.webContents.send("script-log", n.data));
-    }), i.on("exit", (n) => {
-      r(n === 0 ? { success: !0 } : { success: !1, error: `Exit code: ${n}` });
-    }), i.on("error", (n) => {
-      r({ success: !1, error: n.message });
+    }), p.on("message", (o) => {
+      o.type === "log" && (e == null || e.webContents.send("script-log", o.data));
+    }), p.on("exit", (o) => {
+      i(o === 0 ? { success: !0 } : { success: !1, error: `Exit code: ${o}` });
+    }), p.on("error", (o) => {
+      i({ success: !1, error: o.message });
     });
   });
 });
 export {
-  I as MAIN_DIST,
-  j as RENDERER_DIST,
+  M as MAIN_DIST,
+  R as RENDERER_DIST,
   c as VITE_DEV_SERVER_URL
 };

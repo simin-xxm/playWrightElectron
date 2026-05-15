@@ -2,7 +2,8 @@
 const scriptPath = process.argv[2]
 
 async function run() {
-  const script = require(scriptPath)
+  const scriptUrl = require('url').pathToFileURL(scriptPath).href
+  const script = await import(scriptUrl)
   const mod = script.default || script
 
   const onLog = (msg) => {
