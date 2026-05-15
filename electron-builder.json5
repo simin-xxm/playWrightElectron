@@ -1,65 +1,56 @@
 // @see - https://www.electron.build/configuration/configuration
 {
-  "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
-  "appId": "YourAppID",
-  "asar": false,
-  "productName": "脚本管理器",
-  "directories": {
-    "output": "release/${version}"
+  $schema: 'https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json',
+  appId: 'YourAppID',
+  asar: false,
+  productName: '脚本管理器',
+  directories: {
+    output: 'release/${version}',
   },
-  "files": [
-    "dist",
-    "dist-electron"
-  ],
-  "icon": "public/logo.png",
-  "extraResources": [
+  files: ['dist', 'dist-electron'],
+  icon: 'public/logo.png',
+  extraResources: [
     {
-      "from": "scripts",
-      "to": "scripts",
-      "filter": ["**/*.js", "**/*.cjs"]
-    }
+      from: 'scripts',
+      to: 'scripts',
+      filter: ['**/*.js', '**/*.cjs'],
+    },
   ],
-  "mac": {
-    "icon": "public/favicon.ico",
-    "target": [
-      "dmg"
-    ],
-    "artifactName": "${productName}-Mac-${version}-Installer.${ext}",
-    "extraResources": [
+  mac: {
+    icon: 'public/favicon.ico',
+    target: ['dmg'],
+    artifactName: '${productName}-Mac-${version}-Installer.${ext}',
+    extraResources: [
       {
-        "from": "chromium/mac",
-        "to": "chromium"
-      }
-    ]
-  },
-  "win": {
-    "icon": "public/favicon.ico",
-    "target": [
-      {
-        "target": "nsis",
-        "arch": [
-          "x64"
-        ]
-      }
+        from: 'chromium/mac',
+        to: 'chromium',
+      },
     ],
-    "artifactName": "${productName}-Windows-${version}-Setup.${ext}",
-    "extraResources": [
+  },
+  win: {
+    icon: 'public/logo.ico',
+    target: [
       {
-        "from": "chromium/windows",
-        "to": "chromium"
-      }
-    ]
-  },
-  "nsis": {
-    "oneClick": false,
-    "perMachine": false,
-    "allowToChangeInstallationDirectory": true,
-    "deleteAppDataOnUninstall": false
-  },
-  "linux": {
-    "target": [
-      "AppImage"
+        target: 'nsis',
+        arch: ['x64'],
+      },
     ],
-    "artifactName": "${productName}-Linux-${version}.${ext}"
-  }
+    artifactName: '${productName}-Windows-${version}-Setup.${ext}',
+    extraResources: [
+      {
+        from: 'chromium/windows',
+        to: 'chromium',
+      },
+    ],
+  },
+  nsis: {
+    oneClick: false,
+    perMachine: false,
+    allowToChangeInstallationDirectory: true,
+    deleteAppDataOnUninstall: false,
+  },
+  linux: {
+    target: ['AppImage'],
+    artifactName: '${productName}-Linux-${version}.${ext}',
+  },
 }

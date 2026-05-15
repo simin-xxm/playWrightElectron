@@ -1,136 +1,93 @@
-import { app, BrowserWindow, Menu, ipcMain } from "electron";
-import { fileURLToPath } from "node:url";
-import path from "node:path";
-import fs from "node:fs";
-const __dirname$1 = path.dirname(fileURLToPath(import.meta.url));
-process.env.APP_ROOT = path.join(__dirname$1, "..");
-const VITE_DEV_SERVER_URL = process.env["VITE_DEV_SERVER_URL"];
-const MAIN_DIST = path.join(process.env.APP_ROOT, "dist-electron");
-const RENDERER_DIST = path.join(process.env.APP_ROOT, "dist");
-process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, "public") : RENDERER_DIST;
-let win;
-function createWindow() {
-  win = new BrowserWindow({
+import { app as f, BrowserWindow as j, Menu as S, ipcMain as E } from "electron";
+import { fileURLToPath as v } from "node:url";
+import s from "node:path";
+import m from "node:fs";
+const w = s.dirname(v(import.meta.url));
+process.env.APP_ROOT = s.join(w, "..");
+const c = process.env.VITE_DEV_SERVER_URL, M = s.join(process.env.APP_ROOT, "dist-electron"), R = s.join(process.env.APP_ROOT, "dist");
+process.env.VITE_PUBLIC = c ? s.join(process.env.APP_ROOT, "public") : R;
+let e;
+function g() {
+  e = new j({
     width: 1600,
     height: 1e3,
     minWidth: 800,
     minHeight: 600,
-    icon: path.join(process.env.VITE_PUBLIC, "electron-vite.svg"),
+    icon: s.join(process.env.VITE_PUBLIC, "electron-vite.svg"),
     webPreferences: {
-      preload: path.join(__dirname$1, "preload.mjs")
+      preload: s.join(w, "preload.mjs")
     }
-  });
-  if (process.platform === "win32") {
-    win.setMenuBarVisibility(false);
-    win.setAutoHideMenuBar(true);
-  }
-  win.webContents.on("did-finish-load", () => {
-    win == null ? void 0 : win.webContents.send("main-process-message", (/* @__PURE__ */ new Date()).toLocaleString());
-  });
-  if (VITE_DEV_SERVER_URL) {
-    win.loadURL(VITE_DEV_SERVER_URL);
-  } else {
-    win.loadFile(path.join(RENDERER_DIST, "index.html"));
-  }
+  }), process.platform === "win32" && (e.setMenuBarVisibility(!1), e.setAutoHideMenuBar(!0)), e.webContents.on("did-finish-load", () => {
+    e == null || e.webContents.send("main-process-message", (/* @__PURE__ */ new Date()).toLocaleString());
+  }), c ? e.loadURL(c) : e.loadFile(s.join(R, "index.html"));
 }
-app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") {
-    app.quit();
-    win = null;
-  }
+f.on("window-all-closed", () => {
+  process.platform !== "darwin" && (f.quit(), e = null);
 });
-app.on("activate", () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
-  }
+f.on("activate", () => {
+  j.getAllWindows().length === 0 && g();
 });
-app.whenReady().then(() => {
-  if (process.platform === "win32") {
-    Menu.setApplicationMenu(null);
-  }
-  createWindow();
+f.whenReady().then(() => {
+  process.platform === "win32" && S.setApplicationMenu(null), g();
 });
-function getScriptsDir() {
-  if (VITE_DEV_SERVER_URL) {
-    return path.join(process.env.APP_ROOT, "scripts");
-  }
-  return path.join(process.resourcesPath, "scripts");
+function T() {
+  return c ? s.join(process.env.APP_ROOT, "scripts") : s.join(process.resourcesPath, "scripts");
 }
-ipcMain.handle("get-scripts", async () => {
-  const scriptsDir = getScriptsDir();
-  if (!fs.existsSync(scriptsDir)) return [];
-  const files = fs.readdirSync(scriptsDir).filter((f) => (f.endsWith(".js") || f.endsWith(".cjs")) && !f.startsWith("script-runner"));
-  const scripts = [];
-  for (const file of files) {
-    const content = fs.readFileSync(path.join(scriptsDir, file), "utf-8");
-    const nameMatch = content.match(/name:\s*['"](.+?)['"]/);
-    const descMatch = content.match(/description:\s*['"](.+?)['"]/);
-    scripts.push({
-      file,
-      name: nameMatch ? nameMatch[1] : file,
-      description: descMatch ? descMatch[1] : ""
+E.handle("get-scripts", async () => {
+  const a = T();
+  if (!m.existsSync(a)) return [];
+  const h = m.readdirSync(a).filter((t) => (t.endsWith(".js") || t.endsWith(".cjs")) && !t.startsWith("script-runner")), r = [];
+  for (const t of h) {
+    const l = m.readFileSync(s.join(a, t), "utf-8"), d = l.match(/name:\s*['"](.+?)['"]/), n = l.match(/description:\s*['"](.+?)['"]/);
+    r.push({
+      file: t,
+      name: d ? d[1] : t,
+      description: n ? n[1] : ""
     });
   }
-  return scripts;
+  return r;
 });
-ipcMain.handle("run-script", async (_, scriptFile) => {
-  const scriptsDir = getScriptsDir();
-  const scriptPath = path.join(scriptsDir, scriptFile);
-  if (!scriptPath.startsWith(scriptsDir)) {
+E.handle("run-script", async (a, h) => {
+  const r = T(), t = s.join(r, h);
+  if (!t.startsWith(r))
     throw new Error("Invalid script path");
-  }
-  if (!fs.existsSync(scriptPath)) {
+  if (!m.existsSync(t))
     throw new Error("Script not found");
+  const { fork: l } = await import("node:child_process"), d = s.join(r, "script-runner.cjs");
+  let n;
+  if (!c) {
+    const i = s.join(process.resourcesPath, "chromium");
+    process.platform === "win32" ? n = s.join(i, "chrome.exe") : process.platform === "darwin" ? n = s.join(i, "Google Chrome for Testing.app", "Contents", "MacOS", "Google Chrome for Testing") : n = s.join(i, "chrome");
   }
-  const { fork } = await import("node:child_process");
-  const runnerPath = path.join(scriptsDir, "script-runner.cjs");
-  let chromiumPath;
-  if (!VITE_DEV_SERVER_URL) {
-    const chromiumDir = path.join(process.resourcesPath, "chromium");
-    if (process.platform === "win32") {
-      chromiumPath = path.join(chromiumDir, "chrome.exe");
-    } else if (process.platform === "darwin") {
-      chromiumPath = path.join(chromiumDir, "Google Chrome for Testing.app", "Contents", "MacOS", "Google Chrome for Testing");
-    } else {
-      chromiumPath = path.join(chromiumDir, "chrome");
-    }
-  }
-  return new Promise((resolve) => {
-    var _a, _b;
-    const child = fork(runnerPath, [scriptPath], {
+  return new Promise((i) => {
+    var _, P;
+    const p = l(d, [t], {
       stdio: ["pipe", "pipe", "pipe", "ipc"],
-      cwd: scriptsDir,
+      cwd: r,
       env: {
         ...process.env,
         ELECTRON_RUN_AS_NODE: "1",
-        NODE_PATH: VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, "node_modules") : path.join(process.resourcesPath, "app", "node_modules"),
-        ...chromiumPath ? { CHROMIUM_PATH: chromiumPath } : {}
+        NODE_PATH: c ? s.join(process.env.APP_ROOT, "node_modules") : s.join(process.resourcesPath, "app", "node_modules"),
+        ...n ? { CHROMIUM_PATH: n } : {}
       }
     });
-    (_a = child.stdout) == null ? void 0 : _a.on("data", (data) => {
-      const lines = data.toString().trim().split("\n");
-      lines.forEach((line) => win == null ? void 0 : win.webContents.send("script-log", line));
-    });
-    (_b = child.stderr) == null ? void 0 : _b.on("data", (data) => {
-      const lines = data.toString().trim().split("\n");
-      lines.forEach((line) => win == null ? void 0 : win.webContents.send("script-log", `⚠️ ${line}`));
-    });
-    child.on("message", (msg) => {
-      if (msg.type === "log") {
-        win == null ? void 0 : win.webContents.send("script-log", msg.data);
-      }
-    });
-    child.on("exit", (code) => {
-      if (code === 0) resolve({ success: true });
-      else resolve({ success: false, error: `Exit code: ${code}` });
-    });
-    child.on("error", (err) => {
-      resolve({ success: false, error: err.message });
+    (_ = p.stdout) == null || _.on("data", (o) => {
+      o.toString().trim().split(`
+`).forEach((u) => e == null ? void 0 : e.webContents.send("script-log", u));
+    }), (P = p.stderr) == null || P.on("data", (o) => {
+      o.toString().trim().split(`
+`).forEach((u) => e == null ? void 0 : e.webContents.send("script-log", `⚠️ ${u}`));
+    }), p.on("message", (o) => {
+      o.type === "log" && (e == null || e.webContents.send("script-log", o.data));
+    }), p.on("exit", (o) => {
+      i(o === 0 ? { success: !0 } : { success: !1, error: `Exit code: ${o}` });
+    }), p.on("error", (o) => {
+      i({ success: !1, error: o.message });
     });
   });
 });
 export {
-  MAIN_DIST,
-  RENDERER_DIST,
-  VITE_DEV_SERVER_URL
+  M as MAIN_DIST,
+  R as RENDERER_DIST,
+  c as VITE_DEV_SERVER_URL
 };
