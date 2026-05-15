@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc && vite build",
+    "build": "vue-tsc && vite build && node obfuscate-scripts.mjs",
     "build:mac": "pnpm build && electron-builder --mac",
     "build:win": "pnpm build && electron-builder --win",
     "build:all": "pnpm build && electron-builder --mac --win",
@@ -20,6 +20,7 @@
     "electron": "^30.0.1",
     "electron-builder": "^24.13.3",
     "esbuild": "^0.28.0",
+    "javascript-obfuscator": "^5.4.2",
     "prettier": "^3.8.3",
     "tsx": "^4.21.0",
     "typescript": "^5.2.2",

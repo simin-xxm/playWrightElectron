@@ -11,7 +11,7 @@
   icon: 'public/logo.png',
   extraResources: [
     {
-      from: 'scripts',
+      from: 'dist-scripts',
       to: 'scripts',
       filter: ['**/*.js', '**/*.cjs'],
     },
